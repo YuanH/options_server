@@ -20,15 +20,15 @@
         <form method="POST" class="mt-4">
             <div class="form-group">
                 <label for="ticker">Stock Ticker:</label>
-                <input type="text" class="form-control" id="ticker" name="ticker" placeholder="Enter stock ticker (e.g., AAPL)" required>
+                <input type="text" class="form-control" id="ticker" name="ticker" placeholder="Enter stock ticker (e.g., AAPL)" required value="{{ request.form.ticker or ticker or '' }}">
             </div>
             <div class="form-check">
-                <input type="checkbox" class="form-check-input" id="return_filter" name="return_filter">
+                <input type="checkbox" class="form-check-input" id="return_filter" name="return_filter" {% if return_filter %}checked{% endif %}>
                 <label class="form-check-label" for="return_filter">Apply Annualized Return Filter (15%)</label>
             </div>
             <div class="form-check">
-                <input type="checkbox" class="form-check-input" id="in_the_money" name="in_the_money" checked>
-                <label class="form-check-label" for="in_the_money">Show Only Out of the Money Options</label>
+                <input type="checkbox" class="form-check-input" id="out_of_the_money" name="out_of_the_money" {% if out_of_the_money %}checked{% endif %}>
+                <label class="form-check-label" for="out_of_the_money">Show Only Out of the Money Options</label>
             </div>
             <button type="submit" class="btn btn-primary mt-3">Analyze</button>
         </form>
@@ -45,6 +45,9 @@
 
         {% if ticker %}
             <h2 class="mt-5">Option Chain for {{ ticker }}</h2>
+
+            <!-- Display Current Stock Price -->
+            <p>Current Price: <strong>${{ "%.2f"|format(current_price) }}</strong> <small>As of {{ price_time }}</small></p>
 
             <!-- Calls Pivot Table Section -->
             {% if calls_pivot %}

@@ -72,6 +72,29 @@ terraform init
 terraform apply
 ```
 
+### 4. Building the app
+
+Building docker locally:
+
+```bash
+docker build -t options-app:latest ./app
+```
+
+Running docker locally:
+
+```bash
+docker run -p 5001:5000 options-app:latest
+```
+
+Building Docker image for ECS
+
+```bash
+
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin {AccountID}.dkr.ecr.us-east-1.amazonaws.com
+
+docker buildx build --platform linux/amd64 -t {AccountID}.dkr.ecr.us-east-1.amazonaws.com/options-app-repo:latest ./app --push
+```
+
 ---
 
 ## Todo
