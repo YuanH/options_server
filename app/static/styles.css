@@ -1,0 +1,35 @@
+/* static/styles.css */
+
+body {
+    background-color: #f8f9fa;
+}
+
+h1, h2, h3 {
+    color: #343a40;
+}
+
+.table {
+    margin-top: 20px;
+    overflow-x: auto;
+}
+
+.table thead th {
+    background-color: #343a40;
+    color: #ffffff;
+}
+
+.alert.error, .alert.danger, .alert.warning {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.card.card-body {
+    padding: 15px;
+}
+
+.collapse-button {
+    display: block;
+    width: 100%;
+    text-align: left;
+}
