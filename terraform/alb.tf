@@ -75,7 +75,7 @@ resource "aws_lb" "flask_alb" {
 }
 
 # Create Target Group
-resource "aws_lb_target_group" "flask_tg" {
+resource "aws_lb_target_group" "flask_tg_ip" {
   name     = "${var.project_name}-tg"
   port     = 5000
   protocol = "HTTP"
@@ -94,6 +94,10 @@ resource "aws_lb_target_group" "flask_tg" {
   tags = {
     Name = "${var.project_name}-tg"
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # Create Listener for ALB
@@ -104,6 +108,6 @@ resource "aws_lb_listener" "flask_listener" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.flask_tg.arn
+    target_group_arn = aws_lb_target_group.flask_tg_ip.arn
   }
 }
