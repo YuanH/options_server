@@ -1,0 +1,18 @@
+# ipynb
+*.ipynb*
+
+# .DS_Store
+.DS_Store
+
+# datafiles
+*.txt
+*.csv
+
+# venv
+/venv/*
+
+# tfvars
+terraform/*.tfvars
+
+# terraform
+.terraform*
