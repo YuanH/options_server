@@ -76,7 +76,7 @@ resource "aws_lb" "flask_alb" {
 
 # Create Target Group
 resource "aws_lb_target_group" "flask_tg_ip" {
-  name     = "${var.project_name}-tg"
+  name     = "${var.project_name}-tg-ip"
   port     = 5000
   protocol = "HTTP"
   vpc_id   = aws_vpc.main.id
