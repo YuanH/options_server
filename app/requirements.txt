@@ -1,7 +1,6 @@
-# app/requirements.txt
-
-Flask==2.3.2
-gunicorn==20.1.0
-yfinance==0.2.18
-pandas==1.5.3
-# Add other dependencies as needed
+yfinance
+numpy
+pandas
+Flask
+gunicorn
+# Add other dependencies below

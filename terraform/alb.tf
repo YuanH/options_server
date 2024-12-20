@@ -6,10 +6,10 @@ resource "aws_security_group" "ecs_service_sg" {
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    description = "HTTP from ALB"
-    from_port   = 5000
-    to_port     = 5000
-    protocol    = "tcp"
+    description     = "HTTP from ALB"
+    from_port       = 5000
+    to_port         = 5000
+    protocol        = "tcp"
     security_groups = [aws_security_group.alb_sg.id]
   }
 
@@ -76,10 +76,10 @@ resource "aws_lb" "flask_alb" {
 
 # Create Target Group
 resource "aws_lb_target_group" "flask_tg_ip" {
-  name     = "${var.project_name}-tg-ip"
-  port     = 5000
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.main.id
+  name        = "${var.project_name}-tg-ip"
+  port        = 5000
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.main.id
   target_type = "ip"
 
   health_check {

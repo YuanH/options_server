@@ -40,3 +40,9 @@ variable "docker_image_tag" {
   type        = string
   default     = "latest"
 }
+
+variable "domain_name" {
+  description = "domain name"
+  type        = string
+  default     = "yuanhuang.info"
+}

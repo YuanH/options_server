@@ -7,10 +7,10 @@ provider "aws" {
 
 terraform {
   backend "remote" {
-    organization = "YuanHuang"  # Replace with your Terraform Cloud organization name
+    organization = "YuanHuang" # Replace with your Terraform Cloud organization name
 
     workspaces {
-      name = "options_server"  # Replace with your workspace name
+      name = "options_server" # Replace with your workspace name
     }
   }
 

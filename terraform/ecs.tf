@@ -37,8 +37,8 @@ resource "aws_ecs_task_definition" "flask_task" {
   family                   = "${var.project_name}-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = "256"  # Adjust as needed
-  memory                   = "512"  # Adjust as needed
+  cpu                      = "256" # Adjust as needed
+  memory                   = "512" # Adjust as needed
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
 
   container_definitions = jsonencode([
@@ -55,13 +55,13 @@ resource "aws_ecs_task_definition" "flask_task" {
         }
       ]
 
-    #   environment = [
-    #     {
-    #       name  = "FLASK_SECRET_KEY"
-    #       value = var.flask_secret_key
-    #     }
-    #     # Add other environment variables as needed
-    #   ]
+      #   environment = [
+      #     {
+      #       name  = "FLASK_SECRET_KEY"
+      #       value = var.flask_secret_key
+      #     }
+      #     # Add other environment variables as needed
+      #   ]
 
       logConfiguration = {
         logDriver = "awslogs"
@@ -94,8 +94,8 @@ resource "aws_ecs_service" "flask_service" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = aws_subnet.public[*].id
-    security_groups = [aws_security_group.ecs_service_sg.id]
+    subnets          = aws_subnet.public[*].id
+    security_groups  = [aws_security_group.ecs_service_sg.id]
     assign_public_ip = true
   }
 
