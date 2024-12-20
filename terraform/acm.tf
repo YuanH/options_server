@@ -66,11 +66,11 @@ resource "aws_lb_listener" "flask_listener_https" {
 }
 
 # Update Security Group for ALB to Allow HTTPS
-resource "aws_security_group_rule" "allow_https" {
-  type              = "ingress"
-  from_port         = 443
-  to_port           = 443
-  protocol          = "tcp"
-  security_group_id = aws_security_group.alb_sg.id
-  cidr_blocks       = ["0.0.0.0/0"]
-}
+# resource "aws_security_group_rule" "allow_https" {
+#   type              = "ingress"
+#   from_port         = 443
+#   to_port           = 443
+#   protocol          = "tcp"
+#   security_group_id = aws_security_group.alb_sg.id
+#   cidr_blocks       = ["0.0.0.0/0"]
+# }
