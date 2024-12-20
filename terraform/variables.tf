@@ -9,7 +9,7 @@ variable "aws_region" {
 variable "project_name" {
   description = "App to create option calculations"
   type        = string
-  default     = "option-app"
+  default     = "options-app"
 }
 
 variable "vpc_cidr" {
