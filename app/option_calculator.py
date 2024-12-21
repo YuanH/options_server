@@ -104,3 +104,19 @@ def build_pivot_table(data: pd.DataFrame) -> pd.DataFrame:
 
     pivot = pivot.swaplevel(axis=1).sort_index(axis=1)
     return pivot
+
+def get_current_price(stock):
+    hist = stock.history(period="1d", interval="1m")  # Fetching 1 day's data with 1-minute intervals
+    
+    if hist.empty:
+        raise ValueError("No data found for the ticker symbol.")
+    
+    # Get the last available data point
+    last_quote = hist.iloc[-1]
+    current_price = last_quote['Close']
+    price_time = last_quote.name  # This is a Timestamp
+    
+    # Convert Timestamp to desired format and timezone
+    price_time_formatted = price_time.strftime('%Y-%m-%d %H:%M:%S %Z')
+    
+    return current_price, price_time_formatted

@@ -1,8 +1,8 @@
 # app.py
 
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 import pandas as pd
-from option_calculator import fetch_and_calculate_option_returns, build_pivot_table
+from option_calculator import fetch_and_calculate_option_returns, build_pivot_table, get_current_price
 import yfinance as yf
 from datetime import datetime
 
@@ -14,7 +14,7 @@ def index():
     if request.method == 'POST':
         ticker = request.form.get('ticker').upper().strip()
         return_filter = request.form.get('return_filter') == 'on'
-        out_of_the_money = request.form.get('out_of_the_money') == 'on'  # Renamed for clarity
+        out_of_the_money = request.form.get('out_of_the_money') == 'on'
 
         if not ticker:
             flash('Please enter a stock ticker symbol.', 'danger')
@@ -23,11 +23,8 @@ def index():
         try:
             # Fetch current stock price
             stock = yf.Ticker(ticker)
-            hist = stock.history(period="1d")
-            if hist.empty:
-                raise ValueError("Invalid ticker symbol or no data available.")
-            current_price = hist['Close'][0]
-            price_time = hist.index[0].strftime('%Y-%m-%d %H:%M:%S')
+                      
+            current_price, price_time = get_current_price(stock)
 
             # Fetch and calculate option returns
             puts, calls = fetch_and_calculate_option_returns(ticker, return_filter, not out_of_the_money)
@@ -75,6 +72,21 @@ def index():
             return redirect(url_for('index'))
 
     return render_template('index.html')
+
+@app.route('/health', methods=['GET'])
+def health():
+    """
+    Health check endpoint for AWS ALB.
+    Returns HTTP 200 OK if the application is running.
+    """
+    try:
+        # Perform any necessary health checks here
+        # For example, check database connectivity, external service availability, etc.
+        # Since this is a simple app, we'll just return a 200 status.
+        return jsonify(status='UP'), 200
+    except Exception as e:
+        print(f"Health check failed: {e}")
+        return jsonify(status='DOWN'), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
