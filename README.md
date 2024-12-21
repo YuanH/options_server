@@ -95,8 +95,11 @@ aws ecr get-login-password --region us-east-1 | docker login --username AWS --pa
 docker buildx build --platform linux/amd64 -t {AccountID}.dkr.ecr.us-east-1.amazonaws.com/options-app-repo:latest ./app --push
 ```
 
+If there is no change to infrastructure (terraform plan has no change), use AWS Cli to do a manual refresh
+
 ---
 
 ## Todo
 
 - finish building ci-cd
+- add observability
