@@ -34,7 +34,10 @@ def fetch_and_calculate_option_returns(ticker_symbol: str, return_filter: bool =
     stock = yf.Ticker(ticker_symbol)
     stock_price = stock.info.get('currentPrice', None)
     if stock_price is None:
-        raise ValueError("Unable to fetch current stock price.")
+        try:
+            stock_price = stock.info.get('regularMarketPrice')
+        except KeyError: 
+            raise ValueError("Unable to find the current stock price.")
 
     expiration_dates = stock.options
 
@@ -120,3 +123,6 @@ def get_current_price(stock):
     price_time_formatted = price_time.strftime('%Y-%m-%d %H:%M:%S %Z')
     
     return current_price, price_time_formatted
+
+if __name__ == "__main__":
+    fetch_and_calculate_option_returns("QQQ", return_filter=False, in_the_money=False)
