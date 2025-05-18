@@ -124,7 +124,7 @@ resource "aws_ecs_task_definition" "prometheus_task" {
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
 
   volume {
-    name = "prometheus-data"
+    name = "prometheus-storage"
     efs_volume_configuration {
       file_system_id          = aws_efs_file_system.prometheus_data.id
       root_directory          = "/"
@@ -132,14 +132,6 @@ resource "aws_ecs_task_definition" "prometheus_task" {
       authorization_config {
         access_point_id = aws_efs_access_point.prometheus_data.id
       }
-    }
-  }
-
-  volume {
-    name = "prometheus-config"
-    efs_volume_configuration {
-      file_system_id = aws_efs_file_system.prometheus_data.id
-      root_directory = "/config"
     }
   }
 
@@ -151,20 +143,15 @@ resource "aws_ecs_task_definition" "prometheus_task" {
 
       mountPoints = [
         {
-          sourceVolume  = "prometheus-data"
+          sourceVolume  = "prometheus-storage"
           containerPath = "/prometheus"
           readOnly     = false
-        },
-        {
-          sourceVolume  = "prometheus-config"
-          containerPath = "/etc/prometheus"
-          readOnly     = true
         }
       ]
 
       command = [
-        "--config.file=/etc/prometheus/prometheus.yml",
-        "--storage.tsdb.path=/prometheus",
+        "--config.file=/prometheus/config/prometheus.yml",
+        "--storage.tsdb.path=/prometheus/data",
         "--storage.tsdb.retention.time=30d",
         "--web.enable-lifecycle"
       ]
@@ -194,6 +181,14 @@ resource "aws_ecs_task_definition" "grafana_task" {
   memory                   = "512"
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
 
+  volume {
+    name = "grafana-storage"
+    efs_volume_configuration {
+      file_system_id = aws_efs_file_system.prometheus_data.id
+      root_directory = "/grafana"
+    }
+  }
+
   container_definitions = jsonencode([
     {
       name      = "grafana"
@@ -213,9 +208,9 @@ resource "aws_ecs_task_definition" "grafana_task" {
 
       mountPoints = [
         {
-          sourceVolume  = "grafana-provisioning"
+          sourceVolume  = "grafana-storage"
           containerPath = "/etc/grafana/provisioning"
-          readOnly     = true
+          readOnly     = false
         }
       ]
 
@@ -229,14 +224,6 @@ resource "aws_ecs_task_definition" "grafana_task" {
       }
     }
   ])
-
-  volume {
-    name = "grafana-provisioning"
-    efs_volume_configuration {
-      file_system_id = aws_efs_file_system.prometheus_data.id
-      root_directory = "/grafana-provisioning"
-    }
-  }
 
   tags = {
     Name = "${var.project_name}-grafana-task"
@@ -262,37 +249,52 @@ resource "aws_ecs_service" "prometheus_service" {
   }
 }
 
-# Create the configuration files in EFS
-resource "null_resource" "prometheus_config" {
+# Initialize EFS directories
+resource "null_resource" "efs_setup" {
   provisioner "local-exec" {
     command = <<-EOT
-      cat <<EOF > prometheus.yml
-      global:
-        scrape_interval: 15s
-        evaluation_interval: 15s
-      EOF
+      # Create temporary mount point
+      sudo mkdir -p /mnt/efs
+      
+      # Mount EFS
+      sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${aws_efs_file_system.prometheus_data.dns_name}:/ /mnt/efs
+      
+      # Create directories
+      sudo mkdir -p /mnt/efs/data
+      sudo mkdir -p /mnt/efs/config
+      sudo mkdir -p /mnt/efs/grafana/datasources
+      
+      # Create Prometheus config
+      sudo tee /mnt/efs/config/prometheus.yml > /dev/null <<EOF
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+EOF
 
-      aws efs put-object --bucket ${aws_efs_file_system.prometheus_data.id} --key config/prometheus.yml --body prometheus.yml
+      # Create Grafana datasource config
+      sudo tee /mnt/efs/grafana/datasources/datasources.yml > /dev/null <<EOF
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://${aws_ecs_service.prometheus_service.name}.${var.project_name}-cluster:9090
+    isDefault: true
+EOF
+
+      # Set permissions
+      sudo chown -R 1000:1000 /mnt/efs/data
+      sudo chown -R 1000:1000 /mnt/efs/config
+      sudo chown -R 472:472 /mnt/efs/grafana
+      
+      # Unmount EFS
+      sudo umount /mnt/efs
     EOT
   }
-}
 
-resource "null_resource" "grafana_config" {
-  provisioner "local-exec" {
-    command = <<-EOT
-      cat <<EOF > datasources.yml
-      apiVersion: 1
-      datasources:
-        - name: Prometheus
-          type: prometheus
-          access: proxy
-          url: http://${aws_ecs_service.prometheus_service.name}.${var.project_name}-cluster:9090
-          isDefault: true
-      EOF
-
-      aws efs put-object --bucket ${aws_efs_file_system.prometheus_data.id} --key grafana-provisioning/datasources/datasources.yml --body datasources.yml
-    EOT
-  }
+  depends_on = [
+    aws_efs_mount_target.prometheus_data
+  ]
 }
 
 
