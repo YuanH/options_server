@@ -195,6 +195,14 @@ resource "aws_ecs_task_definition" "grafana_task" {
       image     = "grafana/grafana:latest"
       essential = true
 
+      portMappings = [
+        {
+          containerPort = 3000
+          hostPort      = 3000
+          protocol      = "tcp"
+        }
+      ]
+
       environment = [
         {
           name  = "GF_SECURITY_ADMIN_PASSWORD"
