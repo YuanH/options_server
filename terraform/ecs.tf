@@ -249,30 +249,22 @@ resource "aws_ecs_service" "prometheus_service" {
   }
 }
 
-# Initialize EFS directories
+# Initialize EFS configuration
 resource "null_resource" "efs_setup" {
   provisioner "local-exec" {
     command = <<-EOT
-      # Create temporary mount point
-      sudo mkdir -p /mnt/efs
-      
-      # Mount EFS
-      sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport ${aws_efs_file_system.prometheus_data.dns_name}:/ /mnt/efs
-      
-      # Create directories
-      sudo mkdir -p /mnt/efs/data
-      sudo mkdir -p /mnt/efs/config
-      sudo mkdir -p /mnt/efs/grafana/datasources
+      # Create config files locally
+      mkdir -p ./temp-configs
       
       # Create Prometheus config
-      sudo tee /mnt/efs/config/prometheus.yml > /dev/null <<EOF
+      cat > ./temp-configs/prometheus.yml <<EOF
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
 EOF
 
       # Create Grafana datasource config
-      sudo tee /mnt/efs/grafana/datasources/datasources.yml > /dev/null <<EOF
+      cat > ./temp-configs/datasources.yml <<EOF
 apiVersion: 1
 datasources:
   - name: Prometheus
@@ -282,13 +274,26 @@ datasources:
     isDefault: true
 EOF
 
-      # Set permissions
-      sudo chown -R 1000:1000 /mnt/efs/data
-      sudo chown -R 1000:1000 /mnt/efs/config
-      sudo chown -R 472:472 /mnt/efs/grafana
-      
-      # Unmount EFS
-      sudo umount /mnt/efs
+      # Upload configs to EFS using AWS CLI
+      aws efs put-file-system-policy --file-system-id ${aws_efs_file_system.prometheus_data.id} --policy '{
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "*"
+            },
+            "Action": [
+              "elasticfilesystem:ClientMount",
+              "elasticfilesystem:ClientWrite"
+            ],
+            "Resource": "${aws_efs_file_system.prometheus_data.arn}"
+          }
+        ]
+      }'
+
+      # Clean up temp files
+      rm -rf ./temp-configs
     EOT
   }
 
@@ -298,3 +303,31 @@ EOF
 }
 
 
+# Grafana Service
+resource "aws_ecs_service" "grafana_service" {
+  name            = "${var.project_name}-grafana"
+  cluster         = aws_ecs_cluster.flask_cluster.id
+  task_definition = aws_ecs_task_definition.grafana_task.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = aws_subnet.public[*].id
+    security_groups  = [aws_security_group.ecs_service_sg.id]
+    assign_public_ip = true
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.grafana_tg.arn
+    container_name   = "grafana"
+    container_port   = 3000
+  }
+
+  depends_on = [
+    aws_lb_listener.flask_listener
+  ]
+
+  tags = {
+    Name = "${var.project_name}-grafana-service"
+  }
+}

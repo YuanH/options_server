@@ -15,7 +15,7 @@ resource "aws_route53_record" "alb_cert_validation" {
       name   = dvo.resource_record_name
       type   = dvo.resource_record_type
       record = dvo.resource_record_value
-    } if dvo.domain_name == "options.${var.domain_name}"  # Filters to only include the subdomain
+    }
   }
 
   zone_id = data.aws_route53_zone.main.zone_id
