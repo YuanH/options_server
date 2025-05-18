@@ -5,6 +5,18 @@ import pandas as pd
 from option_calculator import fetch_and_calculate_option_returns, build_pivot_table, get_current_price
 import yfinance as yf
 from datetime import datetime
+import logging
+import sys
+from curl_cffi import requests
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s %(levelname)s: %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Replace with a secure key in production
@@ -13,6 +25,7 @@ app.secret_key = 'your_secret_key'  # Replace with a secure key in production
 def index():
     if request.method == 'POST':
         ticker = request.form.get('ticker').upper().strip()
+        logger.info(f"Received ticker: {ticker}")
         return_filter = request.form.get('return_filter') == 'on'
         out_of_the_money = request.form.get('out_of_the_money') == 'on'
 
@@ -22,7 +35,8 @@ def index():
 
         try:
             # Fetch current stock price
-            stock = yf.Ticker(ticker)
+            session = requests.Session(impersonate="chrome")
+            stock = yf.Ticker(ticker, session=session)
                       
             current_price, price_time = get_current_price(stock)
 

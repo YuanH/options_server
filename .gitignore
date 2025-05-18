@@ -16,3 +16,9 @@ terraform/*.tfvars
 
 # terraform
 .terraform*
+
+# vscode
+.vscode/
+
+# pycache
+app/__pycache__/
