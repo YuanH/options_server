@@ -46,9 +46,3 @@ variable "domain_name" {
   type        = string
   default     = "yuanhuang.info"
 }
-
-variable "grafana_admin_password" {
-  description = "Admin password for Grafana"
-  type        = string
-  sensitive   = true
-}

@@ -1,3 +1,4 @@
+
 # Security Group for ECS Service
 resource "aws_security_group" "ecs_service_sg" {
   name        = "${var.project_name}-ecs-sg"
@@ -99,74 +100,14 @@ resource "aws_lb_target_group" "flask_tg_ip" {
   }
 }
 
-# Create Target Group for Grafana
-resource "aws_lb_target_group" "grafana_tg" {
-  name        = "${var.project_name}-grafana-tg"
-  port        = 3000
-  protocol    = "HTTP"
-  vpc_id      = aws_vpc.main.id
-  target_type = "ip"
-
-  health_check {
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 3
-    interval            = 30
-    path               = "/api/health"
-    port               = 3000
-  }
-
-  tags = {
-    Name = "${var.project_name}-grafana-tg"
-  }
-}
-
-# Update the default listener
+# Create Listener for ALB
 resource "aws_lb_listener" "flask_listener" {
   load_balancer_arn = aws_lb.flask_alb.arn
   port              = "80"
   protocol          = "HTTP"
 
   default_action {
-    type = "fixed-response"
-    fixed_response {
-      content_type = "text/plain"
-      message_body = "Invalid hostname"
-      status_code  = "404"
-    }
-  }
-}
-
-# Add listener rules for both services
-resource "aws_lb_listener_rule" "flask_rule" {
-  listener_arn = aws_lb_listener.flask_listener.arn
-  priority     = 100
-
-  action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.flask_tg_ip.arn
   }
-
-  condition {
-    host_header {
-      values = ["yuanhuang.info"]
-    }
-  }
 }
-
-resource "aws_lb_listener_rule" "grafana_rule" {
-  listener_arn = aws_lb_listener.flask_listener.arn
-  priority     = 90
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.grafana_tg.arn
-  }
-
-  condition {
-    host_header {
-      values = ["grafana.yuanhuang.info"]
-    }
-  }
-}
-

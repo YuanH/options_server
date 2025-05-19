@@ -1,6 +1,6 @@
+
 resource "aws_acm_certificate" "alb_cert" {
   domain_name               = "options.${var.domain_name}"  
-  subject_alternative_names = ["grafana.${var.domain_name}"]
   validation_method         = "DNS"
 
   tags = {
@@ -47,18 +47,6 @@ resource "aws_route53_record" "options_subdomain" {
     evaluate_target_health = true
   }
 
-}
-
-resource "aws_route53_record" "grafana_subdomain" {
-  zone_id = data.aws_route53_zone.main.zone_id
-  name    = "grafana.${var.domain_name}"
-  type    = "A"
-
-  alias {
-    name                   = aws_lb.flask_alb.dns_name
-    zone_id                = aws_lb.flask_alb.zone_id
-    evaluate_target_health = true
-  }
 }
 
 
