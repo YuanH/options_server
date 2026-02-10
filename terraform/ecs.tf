@@ -38,6 +38,12 @@ resource "aws_iam_role_policy_attachment" "ecr_read_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
+# Data source to get the latest image digest from ECR
+data "aws_ecr_image" "flask_app_latest" {
+  repository_name = aws_ecr_repository.flask_app.name
+  image_tag       = "latest"
+}
+
 # ECS Task Definition
 resource "aws_ecs_task_definition" "flask_task" {
   family                   = "${var.project_name}-task"
@@ -50,7 +56,7 @@ resource "aws_ecs_task_definition" "flask_task" {
   container_definitions = jsonencode([
     {
       name      = "flask-app"
-      image     = "${aws_ecr_repository.flask_app.repository_url}:latest"
+      image     = "${aws_ecr_repository.flask_app.repository_url}@${data.aws_ecr_image.flask_app_latest.image_digest}"
       essential = true
 
       portMappings = [
@@ -114,6 +120,12 @@ resource "aws_ecs_service" "flask_service" {
   depends_on = [
     aws_lb_listener.flask_listener
   ]
+
+  # Force new deployment when task definition changes
+  # This ensures ECS always uses the latest task definition revision
+  triggers = {
+    task_definition_image = data.aws_ecr_image.flask_app_latest.image_digest
+  }
 
   tags = {
     Name = "${var.project_name}-service"
