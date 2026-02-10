@@ -38,7 +38,8 @@ resource "aws_iam_role_policy_attachment" "ecr_read_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
-# Data source to get the latest image digest from ECR
+# Data source to detect changes to the latest image
+# This is used to trigger redeployments, but we still use :latest tag in the image URL
 data "aws_ecr_image" "flask_app_latest" {
   repository_name = aws_ecr_repository.flask_app.name
   image_tag       = "latest"
@@ -56,7 +57,7 @@ resource "aws_ecs_task_definition" "flask_task" {
   container_definitions = jsonencode([
     {
       name      = "flask-app"
-      image     = "${aws_ecr_repository.flask_app.repository_url}@${data.aws_ecr_image.flask_app_latest.image_digest}"
+      image     = "${aws_ecr_repository.flask_app.repository_url}:latest"
       essential = true
 
       portMappings = [
@@ -121,10 +122,10 @@ resource "aws_ecs_service" "flask_service" {
     aws_lb_listener.flask_listener
   ]
 
-  # Force new deployment when task definition changes
-  # This ensures ECS always uses the latest task definition revision
+  # Force new deployment when the :latest tag points to a new image
+  # This detects changes even though we use :latest tag (not digest) in the image URL
   triggers = {
-    task_definition_image = data.aws_ecr_image.flask_app_latest.image_digest
+    redeployment = data.aws_ecr_image.flask_app_latest.image_digest
   }
 
   tags = {
