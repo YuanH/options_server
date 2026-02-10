@@ -24,7 +24,13 @@
             </div>
             <div class="form-check">
                 <input type="checkbox" class="form-check-input" id="return_filter" name="return_filter" {% if return_filter %}checked{% endif %}>
-                <label class="form-check-label" for="return_filter">Apply Annualized Return Filter (15%)</label>
+                <label class="form-check-label" for="return_filter">Apply Annualized Return Filter</label>
+            </div>
+            <div class="form-group mt-2 ml-4">
+                <label for="return_threshold">Minimum Annualized Return (%):</label>
+                <input type="number" class="form-control" id="return_threshold" name="return_threshold"
+                       min="0" max="1000" step="0.1" value="{{ return_threshold or 15.0 }}"
+                       style="max-width: 200px;">
             </div>
             <div class="form-check">
                 <input type="checkbox" class="form-check-input" id="out_of_the_money" name="out_of_the_money" {% if out_of_the_money %}checked{% endif %}>
@@ -57,7 +63,9 @@
                     </button>
                     <div class="collapse" id="callsPivot">
                         <div class="card card-body">
-                            {{ calls_pivot | safe }}
+                            <div class="table-responsive">
+                                {{ calls_pivot | safe }}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -75,7 +83,9 @@
                     </button>
                     <div class="collapse" id="putsPivot">
                         <div class="card card-body">
-                            {{ puts_pivot | safe }}
+                            <div class="table-responsive">
+                                {{ puts_pivot | safe }}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -85,6 +95,68 @@
                 </div>
             {% endif %}
         {% endif %}
+
+        <!-- Calculation Methodology Section -->
+        <div class="mt-5 mb-5">
+            <h3>Calculation Methodology</h3>
+
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Assumptions</h5>
+                    <ul>
+                        <li><strong>Cash-Secured Puts:</strong> You have sufficient cash to purchase 100 shares at the strike price if assigned. Capital reserved equals the strike price × 100.</li>
+                        <li><strong>Covered Calls:</strong> You already own 100 shares of the underlying stock. Your cost basis is the current stock price.</li>
+                        <li><strong>Premium:</strong> Calculations use the bid price, representing what you would receive if selling the option immediately.</li>
+                        <li><strong>Time Period:</strong> Returns are annualized based on days to expiration (assuming 365 days per year).</li>
+                        <li><strong>No Transaction Costs:</strong> Calculations do not include commissions, fees, or taxes.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Cash-Secured Puts Formula</h5>
+                    <p>When you sell a cash-secured put, you receive a premium and must reserve capital equal to the strike price to potentially buy 100 shares:</p>
+                    <div class="formula-box">
+                        <p><strong>Annualized Return = (Premium / Strike Price) × (365 / Days to Expiration) × 100</strong></p>
+                    </div>
+                    <p class="mt-2"><strong>Example:</strong> Sell a $50 strike put for $2.00 premium with 30 days to expiration:</p>
+                    <ul>
+                        <li>Capital Reserved: $50 × 100 = $5,000</li>
+                        <li>Premium Collected: $2.00 × 100 = $200</li>
+                        <li>Return: ($2.00 / $50) × (365 / 30) × 100 = <strong>48.7% annualized</strong></li>
+                    </ul>
+                    <p class="mt-2"><strong>Breakeven %:</strong> Shows how far the stock can drop before you'd be underwater if assigned.</p>
+                    <div class="formula-box">
+                        <p><strong>Breakeven % = (Current Price - (Strike - Premium)) / Current Price × 100</strong></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Covered Calls Formula</h5>
+                    <p>When you sell a covered call, you receive a premium while owning 100 shares. Your return is based on your stock cost basis:</p>
+                    <div class="formula-box">
+                        <p><strong>Annualized Return = (Premium / Stock Price) × (365 / Days to Expiration) × 100</strong></p>
+                    </div>
+                    <p class="mt-2"><strong>Example:</strong> Stock trading at $100, sell a $105 strike call for $3.00 premium with 30 days to expiration:</p>
+                    <ul>
+                        <li>Capital at Risk: $100 × 100 = $10,000 (your stock position)</li>
+                        <li>Premium Collected: $3.00 × 100 = $300</li>
+                        <li>Return: ($3.00 / $100) × (365 / 30) × 100 = <strong>36.5% annualized</strong></li>
+                    </ul>
+                    <p class="mt-2"><strong>Breakeven %:</strong> Shows the upside potential if the stock rises above the strike.</p>
+                    <div class="formula-box">
+                        <p><strong>Breakeven % = (Strike + Premium - Current Price) / Current Price × 100</strong></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-info">
+                <strong>Note:</strong> These calculations represent theoretical returns and do not guarantee actual results. Options trading involves substantial risk and is not suitable for all investors. Past performance does not indicate future results.
+            </div>
+        </div>
     </div>
 
     <!-- Optional JavaScript for Bootstrap (required for collapse functionality) -->

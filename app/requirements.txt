@@ -1,7 +1,0 @@
-yfinance
-numpy
-pandas
-Flask
-gunicorn
-curl_cffi
-# Add other dependencies below

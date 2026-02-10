@@ -1,0 +1,21 @@
+[project]
+name = "options-app"
+version = "0.1.0"
+description = "Flask app for options chain analysis"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "Flask",
+  "curl_cffi",
+  "gunicorn",
+  "numpy",
+  "pandas",
+  "yfinance",
+]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["app", "option_calculator"]

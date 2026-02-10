@@ -8,14 +8,32 @@ h1, h2, h3 {
     color: #343a40;
 }
 
+/* Make container full width on larger screens */
+.container {
+    max-width: 100%;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
 .table {
-    margin-top: 20px;
-    overflow-x: auto;
+    margin-top: 0;
+    margin-bottom: 0;
+    width: 100%;
+    display: table;
 }
 
 .table thead th {
     background-color: #343a40;
     color: #ffffff;
+    white-space: nowrap;
+    font-size: 0.875rem;
+    padding: 0.75rem;
+}
+
+.table tbody td {
+    white-space: nowrap;
+    font-size: 0.875rem;
+    padding: 0.75rem;
 }
 
 .alert.error, .alert.danger, .alert.warning {
@@ -25,11 +43,63 @@ h1, h2, h3 {
 }
 
 .card.card-body {
-    padding: 15px;
+    padding: 0;
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+    border: none;
+}
+
+/* Make table wrapper responsive */
+.table-responsive {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0;
 }
 
 .collapse-button {
     display: block;
     width: 100%;
     text-align: left;
+}
+
+/* Formula box styling */
+.formula-box {
+    background-color: #e9ecef;
+    border-left: 4px solid #343a40;
+    padding: 15px;
+    margin: 10px 0;
+    font-family: 'Courier New', monospace;
+}
+
+.formula-box p {
+    margin: 0;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .table thead th,
+    .table tbody td {
+        font-size: 0.75rem;
+        padding: 0.5rem;
+    }
+
+    h1 {
+        font-size: 1.75rem;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+    }
+
+    .formula-box {
+        font-size: 0.875rem;
+    }
 }

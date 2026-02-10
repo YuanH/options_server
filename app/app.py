@@ -29,6 +29,12 @@ def index():
         return_filter = request.form.get('return_filter') == 'on'
         out_of_the_money = request.form.get('out_of_the_money') == 'on'
 
+        # Get the return threshold, default to 15.0 if not provided or invalid
+        try:
+            return_threshold = float(request.form.get('return_threshold', 15.0))
+        except (ValueError, TypeError):
+            return_threshold = 15.0
+
         if not ticker:
             flash('Please enter a stock ticker symbol.', 'danger')
             return redirect(url_for('index'))
@@ -37,11 +43,11 @@ def index():
             # Fetch current stock price
             session = requests.Session(impersonate="chrome")
             stock = yf.Ticker(ticker, session=session)
-                      
+
             current_price, price_time = get_current_price(stock)
 
-            # Fetch and calculate option returns
-            puts, calls = fetch_and_calculate_option_returns(ticker, return_filter, not out_of_the_money)
+            # Fetch and calculate option returns with dynamic threshold
+            puts, calls = fetch_and_calculate_option_returns(ticker, return_filter, not out_of_the_money, return_threshold)
 
             # Build pivot tables for puts and calls and replace NaN with empty strings
             puts_pivot = build_pivot_table(puts).fillna('')
@@ -72,6 +78,7 @@ def index():
                 calls_pivot=calls_pivot_html,
                 ticker=ticker,
                 return_filter=return_filter,
+                return_threshold=return_threshold,
                 out_of_the_money=out_of_the_money,
                 current_price=current_price,
                 price_time=price_time

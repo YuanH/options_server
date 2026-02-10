@@ -1,66 +1,107 @@
-# # .github/workflows/ci-cd.yml
+# .github/workflows/ci-cd.yml
 
-# name: CI/CD Pipeline
+name: CI/CD Pipeline
 
-# on:
-#   push:
-#     branches:
-#       - master
-#   pull_request:
-#     branches:
-#       - master
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
-# jobs:
-#   build:
-#     runs-on: ubuntu-latest
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
 
-#     steps:
-#       - name: Checkout Code
-#         uses: actions/checkout@v3
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-#       - name: Configure AWS credentials
-#         uses: aws-actions/configure-aws-credentials@v4
-#         with:
-#           role-to-assume: arn:aws:iam::433356891743:role/GitHubActionsECRPushRole
-#           aws-region: us-east-1
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::433356891743:role/GitHubActionsECRPushRole
+          aws-region: us-east-1
 
-#       - name: Set up QEMU
-#         uses: docker/setup-qemu-action@v2
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
-#       - name: Set up Docker Buildx
-#         uses: docker/setup-buildx-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-#       - name: Cache Docker layers
-#         uses: actions/cache@v3
-#         with:
-#           path: /tmp/.buildx-cache
-#           key: ${{ runner.os }}-buildx-${{ github.sha }}
-#           restore-keys: |
-#             ${{ runner.os }}-buildx-
+      - name: Build and push Docker image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: options-app-repo
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Build and push the image with two tags: commit SHA and latest
+          docker buildx build \
+            --platform linux/amd64 \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+            --push \
+            ./app
 
-#       - name: Login to Amazon ECR
-#         id: login-ecr
-#         uses: aws-actions/amazon-ecr-login@v2
-        
+      - name: Trigger Terraform Cloud Run
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        env:
+          TFC_TOKEN: ${{ secrets.TFC_API_TOKEN }}
+          TFC_ORG: ${{ secrets.TFC_ORGANIZATION }}
+          TFC_WORKSPACE: ${{ secrets.TFC_WORKSPACE }}
+        run: |
+          # Create a new run in Terraform Cloud
+          WORKSPACE_ID=$(curl -s \
+            --header "Authorization: Bearer $TFC_TOKEN" \
+            --header "Content-Type: application/vnd.api+json" \
+            https://app.terraform.io/api/v2/organizations/$TFC_ORG/workspaces/$TFC_WORKSPACE \
+            | jq -r '.data.id')
 
-#       - name: Build, tag, and push Docker image
-#         env:
-#           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-#           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-#           IMAGE_TAG: ${{ github.sha }}
-#         run: |
-#           # Initialize buildx builder with caching
-#           docker buildx create --use --name mybuilder
-#           docker buildx inspect --bootstrap
+          echo "Workspace ID: $WORKSPACE_ID"
 
-#           # Build and push the image with two tags: commit SHA and latest
-#           docker buildx build \
-#             --cache-from=type=local,src=/tmp/.buildx-cache \
-#             --cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max \
-#             -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-#             -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
-#             ./app \
-#             --push
+          # Trigger a new run
+          RUN_RESPONSE=$(curl -s \
+            --header "Authorization: Bearer $TFC_TOKEN" \
+            --header "Content-Type: application/vnd.api+json" \
+            --request POST \
+            --data '{
+              "data": {
+                "attributes": {
+                  "message": "Triggered by GitHub Actions - Image: '"${{ github.sha }}"'",
+                  "auto-apply": false
+                },
+                "type": "runs",
+                "relationships": {
+                  "workspace": {
+                    "data": {
+                      "type": "workspaces",
+                      "id": "'"$WORKSPACE_ID"'"
+                    }
+                  }
+                }
+              }
+            }' \
+            https://app.terraform.io/api/v2/runs)
 
-#           # Update cache for future builds
-#           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+          RUN_ID=$(echo $RUN_RESPONSE | jq -r '.data.id')
+          RUN_URL=$(echo $RUN_RESPONSE | jq -r '.data.attributes."run-url"' || echo "https://app.terraform.io/app/$TFC_ORG/workspaces/$TFC_WORKSPACE/runs/$RUN_ID")
+
+          echo "Terraform Cloud Run ID: $RUN_ID"
+          echo "Terraform Cloud Run URL: $RUN_URL"
+          echo "::notice title=Terraform Cloud::Run triggered at $RUN_URL"
+
+      - name: Force ECS Deployment (Fallback)
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        run: |
+          aws ecs update-service \
+            --cluster options-app-cluster \
+            --service options-app-service \
+            --force-new-deployment \
+            --region us-east-1
+
+          echo "::notice title=ECS Deployment::Forced new deployment of options-app-service"
