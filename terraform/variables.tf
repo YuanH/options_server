@@ -46,3 +46,20 @@ variable "domain_name" {
   type        = string
   default     = "yuanhuang.info"
 }
+
+variable "cloudflare_api_token" {
+  description = "Cloudflare API token with DNS edit permissions."
+  type        = string
+  sensitive   = true
+}
+
+variable "cloudflare_zone_id" {
+  description = "Cloudflare zone ID for the domain."
+  type        = string
+}
+
+variable "cloudflare_proxied" {
+  description = "Whether Cloudflare should proxy traffic for the subdomain."
+  type        = bool
+  default     = false
+}
