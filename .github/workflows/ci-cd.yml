@@ -97,11 +97,12 @@ jobs:
 
       - name: Force ECS Deployment (Fallback)
         if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        continue-on-error: true
         run: |
           aws ecs update-service \
             --cluster options-app-cluster \
             --service options-app-service \
             --force-new-deployment \
-            --region us-east-1
-
-          echo "::notice title=ECS Deployment::Forced new deployment of options-app-service"
+            --region us-east-1 \
+            && echo "::notice title=ECS Deployment::Forced new deployment of options-app-service" \
+            || echo "::warning title=ECS Deployment::Could not force ECS deployment (missing permissions). Terraform Cloud will handle deployment."
