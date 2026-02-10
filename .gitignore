@@ -10,6 +10,8 @@
 
 # venv
 /venv/*
+/.venv/
+app/.venv/
 
 # tfvars
 terraform/*.tfvars
@@ -22,3 +24,8 @@ terraform/*.tfvars
 
 # pycache
 app/__pycache__/
+
+# build artifacts
+*.egg-info/
+dist/
+build/

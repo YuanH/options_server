@@ -9,26 +9,34 @@ def calculate_annualized_return(option_data: pd.DataFrame, stock_price: float, d
     Calculate the annualized return for each option.
     """
     if type == 'puts':
-        # For cash secured puts, capital reserved = (strike price - premium) * 100 * Quantity
+        # For cash secured puts, capital reserved = strike price * 100
         # Return = premium collected / capital reserved
-        option_data['Annualized Return'] = option_data['bid'] / (option_data['strike'] - option_data['bid']) * 365 / days_to_expiration * 100
-        option_data['Distance Perc'] = (stock_price - option_data['bid'] - option_data['strike']) / stock_price
+        option_data['Annualized Return'] = option_data['bid'] / option_data['strike'] * 365 / days_to_expiration * 100
+        # Breakeven distance: current price vs strike - premium
+        option_data['Breakeven %'] = (stock_price - (option_data['strike'] - option_data['bid'])) / stock_price * 100
     elif type == 'calls':
         # For covered calls, return = premium collected / current stock price
         option_data["Annualized Return"] = option_data['bid'] / stock_price * 365 / days_to_expiration * 100
-        option_data['Distance Perc'] = (option_data['strike'] + option_data['bid'] - stock_price) / stock_price * 100
+        # Breakeven distance: strike + premium vs current price
+        option_data['Breakeven %'] = (option_data['strike'] + option_data['bid'] - stock_price) / stock_price * 100
     # Replace infinite or NaN values
     option_data['Annualized Return'] = option_data['Annualized Return'].replace([float('inf'), -float('inf')], 0)
     option_data['Annualized Return'] = option_data['Annualized Return'].fillna(0)
 
     return option_data
 
-def fetch_and_calculate_option_returns(ticker_symbol: str, return_filter: bool = False, in_the_money: bool = False) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def fetch_and_calculate_option_returns(ticker_symbol: str, return_filter: bool = False, in_the_money: bool = False, return_threshold: float = 15.0) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Fetch option chain data and calculate annualized returns for each put/call option.
+
+    Args:
+        ticker_symbol: Stock ticker symbol
+        return_filter: Whether to apply the return threshold filter
+        in_the_money: Whether to include in-the-money options
+        return_threshold: Minimum annualized return percentage for filtering (default 15.0)
     """
-    calls_threshold: float = 15.0
-    puts_threshold: float = 15.0
+    calls_threshold: float = return_threshold
+    puts_threshold: float = return_threshold
 
     # Fetch the stock data
     stock = yf.Ticker(ticker_symbol)

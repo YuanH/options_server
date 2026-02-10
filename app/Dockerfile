@@ -1,23 +1,23 @@
 # app/Dockerfile
 
-# Stage 1: Build
-FROM python:3.10-slim
+# Use official uv image with Python 3.14
+FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim
 
 WORKDIR /app
 
-# Copy requirements first to leverage Docker layer caching
-COPY requirements.txt /app
+# Copy dependency files first to leverage Docker layer caching
+COPY pyproject.toml uv.lock /app/
 
-# Upgrade pip, setuptools, and wheel
-# RUN pip install --upgrade pip setuptools wheel
+# Install dependencies using uv
+# --no-dev excludes development dependencies
+# --frozen ensures the lockfile is not updated
+RUN uv sync --frozen --no-dev
 
-# Install dependencies globally without using --user and without cache
-RUN pip3 install --no-cache-dir -r requirements.txt
-
+# Copy application code
 COPY . /app/
 
 # Expose the application port
 EXPOSE 5000
 
-# Define the default command to run the application
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:app"]
+# Use uv to run the application, which automatically uses the project's virtual environment
+CMD ["uv", "run", "gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:app"]
