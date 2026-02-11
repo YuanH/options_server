@@ -19,5 +19,5 @@ COPY . /app/
 # Expose the application port
 EXPOSE 5000
 
-# Use uv to run the application, which automatically uses the project's virtual environment
+# Use uv to run the application (rebuilds venv at startup but ensures correct platform)
 CMD ["uv", "run", "gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:app"]
