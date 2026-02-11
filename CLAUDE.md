@@ -128,6 +128,12 @@ The pivot tables (app/static/styles.css) are designed to be responsive:
 
 The `/health` endpoint at app/app.py:90 is used by the ALB target group for health checks.
 
+**Important deployment notes:**
+- The `uv run` CMD in the Dockerfile rebuilds the venv on every container start (~6 seconds). This is intentional — it ensures packages are compiled for the correct architecture (linux/amd64). Do NOT replace `uv run` with direct venv execution (e.g., `.venv/bin/gunicorn`) as this causes "invalid ELF header" errors when built on ARM Macs.
+- ALB health check settings must account for this startup delay. Current config: `healthy_threshold=2`, `unhealthy_threshold=3`, `timeout=5s`, `interval=10s`.
+- If a new task definition revision keeps failing health checks during deployment, you may need to manually stop the old revision's tasks to unblock the rolling deployment (ECS waits for `minimumHealthyPercent=100` before draining old tasks).
+- Do NOT use `data.aws_ecr_image` digest in the task definition image URL — use `:latest` tag instead. The digest can become stale between Terraform plan and apply. The digest is only used in the ECS service `triggers` block to detect when `:latest` changes.
+
 ## Terraform Infrastructure
 
 All Terraform files are in the `terraform/` directory:
