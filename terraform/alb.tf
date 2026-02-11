@@ -84,7 +84,7 @@ resource "aws_lb_target_group" "flask_tg_ip" {
 
   health_check {
     healthy_threshold   = 2  # Reduced from 5 for faster health checks (2 × 10s = 20s to become healthy)
-    unhealthy_threshold = 2
+    unhealthy_threshold = 3  # Increased to 3 to tolerate initial startup failures
     timeout             = 5  # Increased from 3 to allow for app startup time
     interval            = 10 # Reduced from 30 for faster health check cycles
     path                = "/health"
