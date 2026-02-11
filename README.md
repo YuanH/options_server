@@ -114,14 +114,33 @@ aws ecs update-service --cluster options-app-cluster --service options-app-servi
 ## Application Features
 
 - **Options Chain Analysis**: Fetches real-time option data for any stock ticker
+- **Concurrent Fetching**: Option chains for all expiration dates are fetched in parallel
 - **Dynamic Return Filter**: User-configurable annualized return threshold (default 15%)
 - **Strategy Calculations**:
   - Cash-secured puts annualized returns
   - Covered calls annualized returns
+  - Breakeven % for both strategies
 - **Responsive Design**: Pivot tables adapt to screen size with horizontal scrolling
 - **Filters**:
   - Annualized return threshold (customizable)
   - Out-of-the-money options only
+
+### Query Parameters
+
+The app supports GET query parameters, so you can bookmark or share URLs with pre-filled options:
+
+```
+/?ticker=AAPL&return_filter=on&return_threshold=25&out_of_the_money=on
+```
+
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| `ticker` | Stock ticker symbol (required) | `AAPL` |
+| `return_filter` | Enable annualized return filtering | `on` |
+| `return_threshold` | Minimum annualized return % (default 15.0) | `25.5` |
+| `out_of_the_money` | Show only OTM options | `on` |
+
+The same parameters work via the web form (POST) or URL query string (GET).
 
 ## Technology Stack
 

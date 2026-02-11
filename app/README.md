@@ -59,7 +59,22 @@ app/
 - **Annualized Return Threshold**: User-configurable (default 15%)
 - **Out-of-the-Money Only**: Filter to show only OTM options
 
-### 4. Responsive UI
+### 4. Query Parameters
+
+Supports both POST form submissions and GET query parameters for bookmarkable/shareable URLs:
+
+```
+https://options.yuanhuang.info/?ticker=AAPL&return_filter=on&return_threshold=25&out_of_the_money=on
+```
+
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| `ticker` | Stock ticker symbol (required) | `AAPL` |
+| `return_filter` | Enable annualized return filtering | `on` |
+| `return_threshold` | Minimum annualized return % (default 15.0) | `25.5` |
+| `out_of_the_money` | Show only OTM options | `on` |
+
+### 5. Responsive UI
 - Pivot tables with horizontal scrolling
 - Adapts to desktop and mobile screens
 - Bootstrap 4 styling with custom CSS
