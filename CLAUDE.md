@@ -105,7 +105,21 @@ The core pricing logic calculates annualized returns for options strategies:
 
 ### Data Fetching
 
-Uses yfinance with curl_cffi session impersonation to avoid rate limiting. The `get_current_price()` function fetches 1-minute interval data for the most recent price quote.
+Uses yfinance with curl_cffi session impersonation to avoid rate limiting. A single `curl_cffi` session is created per request and shared across `get_current_price()` and `fetch_and_calculate_option_returns()`. Option chains for all expiration dates are fetched concurrently using `ThreadPoolExecutor`.
+
+### Query Parameters
+
+The app supports both POST form submissions and GET query parameters. You can bookmark or share URLs with pre-filled parameters:
+
+```
+/?ticker=AAPL&return_filter=on&return_threshold=25&out_of_the_money=on
+```
+
+Available parameters:
+- `ticker` — Stock ticker symbol (required)
+- `return_filter` — Set to `on` to enable annualized return filtering
+- `return_threshold` — Minimum annualized return percentage (default 15.0, accepts decimals like 25.5)
+- `out_of_the_money` — Set to `on` to show only OTM options
 
 ### Filtering Options
 

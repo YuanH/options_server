@@ -10,7 +10,7 @@ import sys
 from curl_cffi import requests
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='%(asctime)s %(levelname)s: %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout)
@@ -23,21 +23,20 @@ app.secret_key = 'your_secret_key'  # Replace with a secure key in production
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    if request.method == 'POST':
-        ticker = request.form.get('ticker').upper().strip()
+    # Support both POST form data and GET query parameters
+    params = request.form if request.method == 'POST' else request.args
+    ticker = params.get('ticker', '').upper().strip()
+
+    if ticker:
         logger.info(f"Received ticker: {ticker}")
-        return_filter = request.form.get('return_filter') == 'on'
-        out_of_the_money = request.form.get('out_of_the_money') == 'on'
+        return_filter = params.get('return_filter') == 'on'
+        out_of_the_money = params.get('out_of_the_money') == 'on'
 
         # Get the return threshold, default to 15.0 if not provided or invalid
         try:
-            return_threshold = float(request.form.get('return_threshold', 15.0))
+            return_threshold = float(params.get('return_threshold', 15.0))
         except (ValueError, TypeError):
             return_threshold = 15.0
-
-        if not ticker:
-            flash('Please enter a stock ticker symbol.', 'danger')
-            return redirect(url_for('index'))
 
         try:
             # Fetch current stock price
@@ -47,7 +46,7 @@ def index():
             current_price, price_time = get_current_price(stock)
 
             # Fetch and calculate option returns with dynamic threshold
-            puts, calls = fetch_and_calculate_option_returns(ticker, return_filter, not out_of_the_money, return_threshold)
+            puts, calls = fetch_and_calculate_option_returns(ticker, return_filter, not out_of_the_money, return_threshold, session=session)
 
             # Build pivot tables for puts and calls and replace NaN with empty strings
             puts_pivot = build_pivot_table(puts).fillna('')
@@ -59,6 +58,8 @@ def index():
                     if col[1] == 'Annualized Return':
                         # Format as integer percentage (e.g., 1318%)
                         pivot[col] = pivot[col].apply(lambda x: f"{int(round(x))}%" if isinstance(x, (float, int)) else '')
+                    elif col[1] == 'Breakeven %':
+                        pivot[col] = pivot[col].apply(lambda x: f"{x:.1f}%" if isinstance(x, (float, int)) else '')
                     elif col[1] == 'bid':
                         # Format bid with two decimal places
                         pivot[col] = pivot[col].apply(lambda x: f"{x:.2f}" if isinstance(x, (float, int)) else '')
@@ -89,7 +90,7 @@ def index():
         except Exception as e:
             flash('An unexpected error occurred. Please try again later.', 'danger')
             # Optionally log the error here for debugging
-            print(f"Error: {e}")
+            logger.error(f"Error: {e}")
             return redirect(url_for('index'))
 
     return render_template('index.html')
