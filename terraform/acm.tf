@@ -1,9 +1,12 @@
 
 resource "aws_acm_certificate" "alb_cert" {
-  domain_name               = "options.${var.domain_name}"  
+  domain_name               = "options.${var.domain_name}"
   subject_alternative_names = ["oura.${var.domain_name}"]
   validation_method         = "DNS"
 
+  lifecycle {
+    create_before_destroy = true
+  }
   tags = {
     Name = "${var.project_name}-alb-cert"
   }
